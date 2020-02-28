@@ -1,64 +1,98 @@
 ---
 page_type: sample
 languages:
-- csharp
+- python
+- html
 products:
-- dotnet
-description: "Add 150 character max description"
-urlFragment: "update-this-to-unique-url-stub"
+- azure-functions
+description: "Predict ImageNet Classes with PyTorch and Azure Functions"
+urlFragment: functions-python-pytorch-tutorial
 ---
 
-# Official Microsoft Sample
+# Make machine learning predictions with PyTorch and Azure Functions
 
-<!-- 
-Guidelines on README format: https://review.docs.microsoft.com/help/onboard/admin/samples/concepts/readme-template?branch=master
+## Run locally
 
-Guidance on onboarding samples to docs.microsoft.com/samples: https://review.docs.microsoft.com/help/onboard/admin/samples/process/onboarding?branch=master
+Note, the instructions below assume you are using a Linux environment.
 
-Taxonomies for products and languages: https://review.docs.microsoft.com/new-hope/information-architecture/metadata/taxonomies?branch=master
--->
+### Activate virtualenv 
 
-Give a short description for your sample here. What does it do and why is it important?
+1. `mkdir start`
+1. `cd start`
+1. `python -m venv .venv`
+1. `source .venv/bin/activate`
 
-## Contents
+### Initialize function app
 
-Outline the file contents of the repository. It helps users navigate the codebase, build configuration and any related assets.
+1. `func init --worker-runtime python`
+1. `func new --name classify --template "HTTP trigger"`
 
-| File/folder       | Description                                |
-|-------------------|--------------------------------------------|
-| `src`             | Sample source code.                        |
-| `.gitignore`      | Define what to ignore at commit time.      |
-| `CHANGELOG.md`    | List of changes to the sample.             |
-| `CONTRIBUTING.md` | Guidelines for contributing to the sample. |
-| `README.md`       | This README file.                          |
-| `LICENSE`         | The license for the sample.                |
+### Copy resources into the classify folder, assuming you run these commands from start
 
-## Prerequisites
+1. `cp ../resources/predict.py classify`
+1. `cp ../resources/labels.txt classify`
+1. Add the following dependencies to start/requirements.txt, installing some numerical libraries and PyTorch itself:
 
-Outline the required components and tools that a user might need to have on their machine in order to run the sample. This can be anything from frameworks, SDKs, OS versions or IDE releases.
+```bash
+azure-functions
+requests
+numpy==1.15.4
+https://download.pytorch.org/whl/cpu/torch-1.4.0%2Bcpu-cp36-cp36m-win_amd64.whl; sys_platform == 'win32' and python_version == '3.6'
+https://download.pytorch.org/whl/cpu/torch-1.4.0%2Bcpu-cp36-cp36m-linux_x86_64.whl; sys_platform == 'linux' and python_version == '3.6'
+https://download.pytorch.org/whl/cpu/torch-1.4.0%2Bcpu-cp37-cp37m-win_amd64.whl; sys_platform == 'win32' and python_version == '3.7'
+https://download.pytorch.org/whl/cpu/torch-1.4.0%2Bcpu-cp37-cp37m-linux_x86_64.whl; sys_platform == 'linux' and python_version == '3.7'
+https://download.pytorch.org/whl/cpu/torch-1.4.0%2Bcpu-cp38-cp38-win_amd64.whl; sys_platform == 'win32' and python_version == '3.8'
+https://download.pytorch.org/whl/cpu/torch-1.4.0%2Bcpu-cp38-cp38-linux_x86_64.whl; sys_platform == 'linux' and python_version == '3.8'
+torchvision==0.5.0
+```
+1. Install dependencies with `pip install --no-cache-dir -r requirements.txt`
 
-## Setup
+### Update the function to run predictions
 
-Explain how to prepare the sample once the user clones or downloads the repository. The section should outline every step necessary to install dependencies and set up any settings (for example, API keys and output folders).
+1. Add an `import` statement to `classify/__init__.py`
 
-## Running the sample
+```{py}
+import logging
+import json
+import azure.functions as func
 
-Outline step-by-step instructions to execute the sample and see its output. Include steps for executing the sample from the IDE, starting specific services in the Azure portal or anything related to the overall launch of the code.
+from .predict import predict_image_from_url
 
-## Key concepts
+```
 
-Provide users with more context on the tools and services used in the sample. Explain some of the code that is being used and how services interact with each other.
+1. Replace the entire contents of the `main` function with the following code:
+
+```{py}
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    image_url = req.params.get('img')
+    logging.info('Image URL received: ' + image_url)
+
+    results = predict_image_from_url(image_url)
+
+    headers = {
+        "Content-type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+    }
+
+    return func.HttpResponse(json.dumps(results), headers = headers)
+
+```
+
+### Run the local function
+
+1. Run `func start` from within the start folder with the virtual environment activated.
+1. Run `http://localhost:7071/api/classify?img=https://raw.githubusercontent.com/gvashishtha/functions-pytorch/master/resources/assets/Bernese-Mountain-Dog-Temperament-long.jpg`
+
+
+### Publish to Azure
+1. `func azure functionapp publish <appname> --build local`
+1. Test by using the suggested URL and appending `&img=https://raw.githubusercontent.com/gvashishtha/functions-pytorch/master/resources/assets/Bernese-Mountain-Dog-Temperament-long.jpg` at the end of the query string.
+
+## License
+
+See [LICENSE](LICENSE).
 
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+  
