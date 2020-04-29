@@ -83,6 +83,39 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 1. Run `func start` from within the start folder with the virtual environment activated.
 1. Run `http://localhost:7071/api/classify?img=https://raw.githubusercontent.com/gvashishtha/functions-pytorch/master/resources/assets/Bernese-Mountain-Dog-Temperament-long.jpg`
 
+### Create an Azure function
+Run the following in the [Azure Cloud Shell](https://docs.microsoft.com/azure/cloud-shell/overview) to create a sample function app with a Python runtime:
+
+```dotnetcli
+#!/bin/bash
+
+# Function app and storage account names must be unique.
+storageName=mystorageaccount$RANDOM
+functionAppName=myserverlessfunc$RANDOM
+region=westeurope
+pythonVersion=3.7
+
+# Create a resource group.
+az group create --name myResourceGroup --location $region
+
+# Create an Azure storage account in the resource group.
+az storage account create \
+  --name $storageName \
+  --location $region \
+  --resource-group myResourceGroup \
+  --sku Standard_LRS
+
+# Create a serverless function app in the resource group.
+az functionapp create \
+  --name $functionAppName \
+  --storage-account $storageName \
+  --consumption-plan-location $region \
+  --resource-group myResourceGroup \
+  --os-type Linux \
+  --runtime python \
+  --runtime-version $pythonVersion \
+  --functions-version 2
+```
 
 ### Publish to Azure
 1. `func azure functionapp publish <appname> --build local`
