@@ -83,7 +83,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 1. Run `func start` from within the start folder with the virtual environment activated.
 1. Run `http://localhost:7071/api/classify?img=https://raw.githubusercontent.com/gvashishtha/functions-pytorch/master/resources/assets/Bernese-Mountain-Dog-Temperament-long.jpg`
 
-### Create an Azure function
+### Create an Azure Function
 Run the following in the [Azure Cloud Shell](https://docs.microsoft.com/azure/cloud-shell/overview) to create a sample function app with a Python runtime:
 
 ```dotnetcli
